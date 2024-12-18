@@ -16,6 +16,7 @@ abstract class BaseFilter
     protected bool $isRange = false;
     protected bool $isRequired = false;
     protected bool $isFiltering = false;
+    protected bool $isNullable = false;
     protected Closure|null $customQueryClosure = null;
 
     abstract public function setQuery(array $filterValueOrValues);
@@ -84,6 +85,18 @@ abstract class BaseFilter
     public function getIsFiltering(): bool
     {
         return $this->isFiltering;
+    }
+
+    public function getIsNullable(): bool
+    {
+        return $this->isNullable;
+    }
+
+    public function nullable(): static
+    {
+        $this->isNullable = true;
+
+        return $this;
     }
 
     public function multiple(): static

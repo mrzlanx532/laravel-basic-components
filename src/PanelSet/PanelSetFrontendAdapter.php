@@ -82,14 +82,14 @@ class PanelSetFrontendAdapter
         foreach ($filters as $filter) {
 
             /* @var $filter BaseFilter */
-
             $config = [
                 'hidden' => $filter->getIsHidden(),
                 'multiple' => $filter->getIsMultiple(),
                 'range' => $filter->getIsRange(),
                 'url' =>  method_exists($filter, 'getUrl') ? $filter->getUrl() : "",
                 'filter' => $filter->getIsFiltering(),
-                'mask' => method_exists($filter, 'getMask') ? $filter->getMask() : null
+                'mask' => method_exists($filter, 'getMask') ? $filter->getMask() : null,
+                'nullable' => $filter->getIsNullable()
             ];
 
             $preparedFilters[$index]['id'] = $filter->getFilterParamName();

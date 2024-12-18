@@ -7,7 +7,7 @@ use Illuminate\Support\Carbon;
 
 class DateFilter extends BaseFilter
 {
-    private bool $isInclusive = false;
+    private bool $isExclusive = false;
 
     private string $timezone;
 
@@ -57,11 +57,11 @@ class DateFilter extends BaseFilter
 
     private function getFirstValueComparisonSign(): string
     {
-        if ($this->getIsInclusive()) {
-            return '>=';
+        if ($this->getIsExclusive()) {
+            return '>';
         }
 
-        return '>';
+        return '>=';
     }
 
     public function setTimezone($timezone): static
@@ -73,11 +73,11 @@ class DateFilter extends BaseFilter
 
     private function getSecondValueComparisonSign(): string
     {
-        if ($this->getIsInclusive()) {
-            return '<=';
+        if ($this->getIsExclusive()) {
+            return '<';
         }
 
-        return '<';
+        return '<=';
     }
 
     public function getOptions(): array|null
@@ -85,14 +85,14 @@ class DateFilter extends BaseFilter
         return null;
     }
 
-    public function getIsInclusive(): bool
+    public function getIsExclusive(): bool
     {
-        return $this->isInclusive;
+        return $this->isExclusive;
     }
 
-    public function inclusive(): static
+    public function exclusive(): static
     {
-        $this->isInclusive = true;
+        $this->isExclusive = true;
 
         return $this;
     }

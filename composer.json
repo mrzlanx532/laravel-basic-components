@@ -1,0 +1,36 @@
+{
+  "name": "mrzlanx532/laravel-basic-components",
+  "description": "Laravel basic components",
+  "license": "MIT",
+  "homepage": "https://github.com/mrzlanx532/laravel-basic-components",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Denis Danilov",
+      "email": "denis_danilov_97@mail.ru",
+      "role": "Fullstack-developer",
+      "homepage": "https://t.me/mrzlanx532"
+    }
+  ],
+  "support": {
+    "email": "denis_danilov_97@mail.ru",
+    "docs": "https://github.com/mrzlanx532/laravel-basic-components/-/blob/main/README.md"
+  },
+  "require": {
+    "php": ">=8.0",
+    "laravel/framework": "^8.3|^9.11|^11.0",
+    "intervention/image": "^2.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Mrzlanx532\\LaravelBasicComponents\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Mrzlanx532\\LaravelBasicComponents\\Providers\\LaravelBasicComponentsProvider"
+      ]
+    }
+  }
+}

@@ -7,15 +7,9 @@ use Illuminate\Support\Carbon;
 
 class DateFilter extends BaseFilter
 {
-    private bool $isExclusive = false;
-
-    private string $timezone;
-
     public function __construct(PanelSet $panelSet, string $columnName, string $title = null)
     {
         parent::__construct($panelSet, $columnName, $title);
-
-        $this->timezone = config('app.timezone');
     }
 
     public function getType(): string
@@ -26,79 +20,46 @@ class DateFilter extends BaseFilter
     public function setQuery($filterValueOrValues)
     {
         if ($this->getIsRange()) {
+            if ($filterValueOrValues[0] && $filterValueOrValues[1]) {
+                $this->panelSet->queryBuilder
+                    ->whereBetween(
+                        $this->columnName,
+                        [
+                            Carbon::parse($filterValueOrValues[0])->toDateTimeString(),
+                            Carbon::parse($filterValueOrValues[1])->toDateTimeString(),
+                        ]
+                    );
+
+                return;
+            }
 
             if ($filterValueOrValues[0]) {
-                $this->panelSet->queryBuilder
-                    ->whereDate(
-                        $this->columnName,
-                        $this->getFirstValueComparisonSign(),
-                        Carbon::parse($filterValueOrValues[0])->setTimezone($this->getTimezone())->toDateTimeString()
-                    );
+                $this->panelSet->queryBuilder->where($this->columnName, '>=', Carbon::parse($filterValueOrValues[0])->toDateTimeString());
             }
 
             if ($filterValueOrValues[1]) {
-                $this->panelSet->queryBuilder
-                    ->whereDate(
-                        $this->columnName,
-                        $this->getSecondValueComparisonSign(),
-                        Carbon::parse($filterValueOrValues[1])->setTimezone($this->getTimezone())->toDateTimeString()
-                    );
+                $this->panelSet->queryBuilder->where($this->columnName, '<=', Carbon::parse($filterValueOrValues[1])->toDateTimeString());
             }
 
             return;
         }
 
-        $this->panelSet->queryBuilder->whereDate(
+        $this->panelSet->queryBuilder->whereBetween(
             $this->columnName,
-            '=',
-            Carbon::createFromTimestamp($filterValueOrValues[0], $this->getTimezone())->toDateTimeString()
+            [
+                Carbon::parse($filterValueOrValues[0])
+                    ->toDateTimeString(),
+                Carbon::parse($filterValueOrValues[0])
+                    ->add(23, 'hours')
+                    ->add(59, 'minutes')
+                    ->add(59, 'seconds')
+                    ->toDateTimeString(),
+            ],
         );
-    }
-
-    private function getFirstValueComparisonSign(): string
-    {
-        if ($this->getIsExclusive()) {
-            return '>';
-        }
-
-        return '>=';
-    }
-
-    public function setTimezone($timezone): static
-    {
-        $this->timezone = $timezone;
-
-        return $this;
-    }
-
-    private function getSecondValueComparisonSign(): string
-    {
-        if ($this->getIsExclusive()) {
-            return '<';
-        }
-
-        return '<=';
     }
 
     public function getOptions(): array|null
     {
         return null;
-    }
-
-    public function getIsExclusive(): bool
-    {
-        return $this->isExclusive;
-    }
-
-    public function exclusive(): static
-    {
-        $this->isExclusive = true;
-
-        return $this;
-    }
-
-    private function getTimezone(): string
-    {
-        return $this->timezone;
     }
 }

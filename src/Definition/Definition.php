@@ -13,7 +13,7 @@ abstract class Definition
         return static::$items;
     }
 
-    static public function getItems($associative = true, $withConstantProperty = false, $withLocale = false, $specifiedLocale = null, array $exclude = []): array
+    static public function getItems($associative = false, $withConstantProperty = false, $withLocale = false, $specifiedLocale = null, array $exclude = []): array
     {
         $items = [];
         $numericIndex = 0;
@@ -89,7 +89,7 @@ abstract class Definition
     {
         $values = [];
 
-        foreach (static::getItems() as $item) {
+        foreach (static::getItems(true) as $item) {
             $values[] = $item['id'];
         }
 

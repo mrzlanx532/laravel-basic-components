@@ -21,14 +21,16 @@ class DateFilter extends BaseFilter
 
     public function setQuery($filterValueOrValues)
     {
+        $methodName = $this->getIsTimestamp() ? 'toDateTimeString' : 'toDateString';
+
         if ($this->getIsRange()) {
             if ($filterValueOrValues[0] && $filterValueOrValues[1]) {
                 $this->panelSet->queryBuilder
                     ->whereBetween(
                         $this->columnName,
                         [
-                            Carbon::parse($filterValueOrValues[0])->toDateTimeString(),
-                            Carbon::parse($filterValueOrValues[1])->toDateTimeString(),
+                            $this->createCarbon($filterValueOrValues[0])->{$methodName}(),
+                            $this->createCarbon($filterValueOrValues[1])->{$methodName}(),
                         ]
                     );
 
@@ -36,28 +38,42 @@ class DateFilter extends BaseFilter
             }
 
             if ($filterValueOrValues[0]) {
-                $this->panelSet->queryBuilder->where($this->columnName, '>=', Carbon::parse($filterValueOrValues[0])->toDateTimeString());
+                $this->panelSet->queryBuilder->where($this->columnName, '>=', $this->createCarbon($filterValueOrValues[0])->{$methodName}());
             }
 
             if ($filterValueOrValues[1]) {
-                $this->panelSet->queryBuilder->where($this->columnName, '<=', Carbon::parse($filterValueOrValues[1])->toDateTimeString());
+                $this->panelSet->queryBuilder->where($this->columnName, '<=', $this->createCarbon($filterValueOrValues[1])->{$methodName}());
             }
 
             return;
         }
 
-        $this->panelSet->queryBuilder->whereBetween(
+        if ($this->getIsTimestamp()) {
+            $this->panelSet->queryBuilder->whereBetween(
+                $this->columnName,
+                [
+                    $this->createCarbon($filterValueOrValues[0])
+                        ->toDateTimeString(),
+                    $this->createCarbon($filterValueOrValues[0])
+                        ->add(23, 'hours')
+                        ->add(59, 'minutes')
+                        ->add(59, 'seconds')
+                        ->toDateTimeString(),
+                ],
+            );
+
+            return;
+        }
+
+        $this->panelSet->queryBuilder->where(
             $this->columnName,
-            [
-                Carbon::parse($filterValueOrValues[0])
-                    ->toDateTimeString(),
-                Carbon::parse($filterValueOrValues[0])
-                    ->add(23, 'hours')
-                    ->add(59, 'minutes')
-                    ->add(59, 'seconds')
-                    ->toDateTimeString(),
-            ],
+            $this->createCarbon($filterValueOrValues[0])->toDateString(),
         );
+    }
+
+    private function createCarbon($value): Carbon
+    {
+        return $this->getIsTimestamp() ? Carbon::parse($value) : Carbon::createFromFormat('d.m.Y', $value);
     }
 
     public function notTimestamp(): static

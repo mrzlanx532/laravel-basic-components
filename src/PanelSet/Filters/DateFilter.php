@@ -7,6 +7,8 @@ use Illuminate\Support\Carbon;
 
 class DateFilter extends BaseFilter
 {
+    private bool $isTimestamp = true;
+
     public function __construct(PanelSet $panelSet, string $columnName, string $title = null)
     {
         parent::__construct($panelSet, $columnName, $title);
@@ -56,6 +58,18 @@ class DateFilter extends BaseFilter
                     ->toDateTimeString(),
             ],
         );
+    }
+
+    public function notTimestamp(): static
+    {
+        $this->isTimestamp = false;
+
+        return $this;
+    }
+
+    public function getIsTimestamp(): bool
+    {
+        return $this->isTimestamp;
     }
 
     public function getOptions(): array|null

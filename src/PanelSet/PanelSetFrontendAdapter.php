@@ -4,6 +4,7 @@ namespace Mrzlanx532\LaravelBasicComponents\PanelSet;
 
 use Closure;
 use Mrzlanx532\LaravelBasicComponents\PanelSet\Filters\BaseFilter;
+use Mrzlanx532\LaravelBasicComponents\PanelSet\Filters\DateFilter;
 use Mrzlanx532\LaravelBasicComponents\Service\BrowserFilterPreset\BrowserFilterPresetBaseService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -91,6 +92,11 @@ class PanelSetFrontendAdapter
                 'mask' => method_exists($filter, 'getMask') ? $filter->getMask() : null,
                 'nullable' => $filter->getIsNullable()
             ];
+
+            if ($filter->getType() === 'DATE') {
+                /* @var $filter DateFilter */
+                $config['is_timestamp'] = $filter->getIsTimestamp();
+            }
 
             $preparedFilters[$index]['id'] = $filter->getFilterParamName();
             $preparedFilters[$index]['title'] = $filter->getTitle();

@@ -93,7 +93,7 @@ class PanelSetFrontendAdapter
                 'nullable' => $filter->getIsNullable()
             ];
 
-            if ($filter->getType() === 'DATE') {
+            if (in_array($filter->getType(), ['DATE', 'DATETIME'])) {
                 /* @var $filter DateFilter */
                 $config['is_timestamp'] = $filter->getIsTimestamp();
             }

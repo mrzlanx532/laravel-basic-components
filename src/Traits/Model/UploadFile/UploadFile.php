@@ -2,242 +2,63 @@
 
 namespace Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile;
 
-use Mrzlanx532\LaravelBasicComponents\Helpers\FileHelper\Exceptions\ResizeTypeDoesNotExists;
-use Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\Exceptions\InvalidFilePropertiesWithSettingsPropertyConfiguration;
-use Mrzlanx532\LaravelBasicComponents\Helpers\FileHelper\FileHelper;
+use Mrzlanx532\LaravelBasicComponents\Models\File;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Mrzlanx532\LaravelBasicComponents\Helpers\FileHelper\FileHelper;
 
 trait UploadFile
 {
-    /**
-     * Из \Illuminate\Database\Eloquent\Model
-     * Вызывается магический метод bootTraits
-     *
-     * @throws InvalidFilePropertiesWithSettingsPropertyConfiguration
-     * @uses \Illuminate\Database\Eloquent\Model
-     */
-    public static function bootUploadFile()
+    protected static function booted(): void
     {
-        static::saving(function ($model) {
-            FileHelper::validateFilePropertiesWithSettingsConfig($model, 'filePropertiesWithSettings');
+        /** @var Model & object{uploadFile: UploadedFile|null} $model */
+        static::saving(function (Model $model) {
 
-            foreach (static::$filePropertiesWithSettings as $filePropertyName => $filePropertySettings) {
+            $config = FileHelper::getUploadFileConfig($model);
+            $filepath = $config->getFilepathPrefix() . '/' . FileHelper::generateFolderPathByCurrentDate();
+            $disk = $config->isPrivate() ? $config->getPrivateDisk() : $config->getPublicDisk();
 
-                switch ($model->determineModelAction($model)) {
-                    case FileHelper::MODEL_CREATING:
-                        $model->saveNewFile($model, $filePropertyName, $filePropertySettings);
-                        break;
-                    case FileHelper::MODEL_UPDATING:
-                        $model->removePreviousFilesIfExists($model, $filePropertyName, $filePropertySettings);
-                        $model->saveNewFile($model, $filePropertyName, $filePropertySettings);
-                        break;
+            if ($model->exists) {
+                if (Storage::disk($disk)->exists($model->file->filepath)) {
+                    Storage::disk($disk)->delete($model->file->filepath);
                 }
+
+                $file = $model->file;
+            } else {
+                $file = new File;
             }
+
+            $file->filename = $model->uploadFile->hashName();
+            $file->filepath = "$filepath/$file->filename";
+            $file->original_filename = preg_replace('/[^\p{L}0-9_\-\. ]/u', '', $model->uploadFile->getClientOriginalName());
+            $file->save();
+
+            $model->{$config->getForeignKey()} = $file->id;
+
+            $model->uploadFile->storeAs(
+                $filepath,
+                $file->filename,
+                $disk
+            );
+
+            unset($model->uploadFile);
         });
 
-        static::deleting(function ($model) {
+        static::deleting(function (Model $model) {
+            $config = FileHelper::getUploadFileConfig($model);
+            $disk = $config->isPrivate() ? $config->getPrivateDisk() : $config->getPublicDisk();
 
-            if (!defined(get_class($model).'UPLOAD_FILE_TRAIT_DELETING_FILES')) {
-                return;
-            }
-
-            $uploadFileDeletingFiles = get_class($model).'UPLOAD_FILE_TRAIT_DELETING_FILES';
-
-            if ($uploadFileDeletingFiles) {
-                FileHelper::validateFilePropertiesWithSettingsConfig($model, 'filePropertiesWithSettings');
-
-                foreach (static::$filePropertiesWithSettings as $filePropertyName => $filePropertySettings) {
-                    $model->removePreviousFilesIfExists($model, $filePropertyName, $filePropertySettings);
-                }
+            if (FileHelper::isNeedToDeleteFileFromStorage($model, $disk)) {
+                Storage::disk($disk)->delete($model->file->filepath);
+                $model->file->delete();
             }
         });
     }
 
-    /**
-     * Удаляем основной файл и thumbnails, если они есть
-     *
-     * @param Model $model
-     * @param $filePropertyName
-     * @param $filePropertySettings
-     */
-    protected function removePreviousFilesIfExists(Model $model, $filePropertyName, $filePropertySettings)
+    public function file(): BelongsTo
     {
-        $fullPathOfPreviousFile = "public/images/{$model->getOriginal($filePropertyName)}";
-
-        if ($fullPathOfPreviousFile === null) {
-            return;
-        }
-
-        if (!$model->isDirty($filePropertyName)) {
-            return;
-        }
-
-        if (Storage::exists($fullPathOfPreviousFile)) {
-            Storage::delete($fullPathOfPreviousFile);
-        }
-
-        if (is_array($filePropertySettings)) {
-
-            foreach ($filePropertySettings as $filePropertySettingsKey => $filePropertySettingsParams) {
-
-                $thumbnailExtension = FileHelper::getExtensionFromFullPath($fullPathOfPreviousFile);
-
-                if ($filePropertySettingsParams[2] === FileHelper::RESIZE_TYPE_FIT_INTO_AREA_WITH_PROPORTIONS_AND_COLOR_CANVAS) {
-                    $thumbnailExtension = 'jpg';
-                }
-
-                $fullPathOfThumbnailForPreviousFile = implode('', [
-                    FileHelper::getFullPathWithFileNameWithoutExtension($fullPathOfPreviousFile),
-                    "_$filePropertySettingsKey.",
-                    $thumbnailExtension
-                ]);
-
-                if (Storage::exists($fullPathOfThumbnailForPreviousFile)) {
-                    Storage::delete($fullPathOfThumbnailForPreviousFile);
-                }
-            }
-        }
-    }
-
-    /**
-     * @throws ResizeTypeDoesNotExists
-     */
-    protected function saveNewFile(Model $model, $filePropertyName, $filePropertySettings)
-    {
-        /* @var $file UploadedFile|null */
-        $file = $model->$filePropertyName;
-
-        if ($file === null) {
-            return;
-        }
-
-        if (is_string($file)) {
-            return;
-        }
-
-        $folderPathByCurrentDate = FileHelper::generateFolderPathByCurrentDate();
-
-        $file->storeAs("public/images/$folderPathByCurrentDate", $file->hashName());
-        $model->$filePropertyName = $folderPathByCurrentDate . '/' . $file->hashName();
-
-        if (is_array($filePropertySettings)) {
-            foreach ($filePropertySettings as $filePropertySettingsKey => $filePropertySettingsParams) {
-
-                $fileStreamAfterResize = FileHelper::resizeFileAndGetStreamOfFile($file, $filePropertySettingsParams);
-
-                $extension = FileHelper::getExtensionFromFullPath($file->hashName());
-
-                if ($filePropertySettingsParams[2] === FileHelper::RESIZE_TYPE_FIT_INTO_AREA_WITH_PROPORTIONS_AND_COLOR_CANVAS) {
-                    $extension = 'jpg';
-                }
-
-                $fileNameWithPathForThumbnail = implode('', [
-                    "public/images/$folderPathByCurrentDate/",
-                    FileHelper::getFullPathWithFileNameWithoutExtension($file->hashName()),
-                    "_$filePropertySettingsKey.",
-                    $extension
-                ]);
-
-                Storage::put($fileNameWithPathForThumbnail, $fileStreamAfterResize);
-            }
-        }
-    }
-
-    /**
-     * Определяем модель создается или обновляется
-     * @param Model $model
-     * @return string
-     */
-    private function determineModelAction(Model $model): string
-    {
-        if ($model->getKey()) {
-            return FileHelper::MODEL_UPDATING;
-        }
-
-        return FileHelper::MODEL_CREATING;
-    }
-
-    /**
-     * В зависимости от конфигурации $filePropertiesWithSettings в модели
-     * отдаем либо:
-     *  1. оригинальный файл
-     * [
-     *     "original": "/storage/images/2021/09/15/gA3bePmbSmyfmsbV9sO1IdD1TEXrMZjUyhuKldnG.png"
-     * ]
-     *  2. массив путей с thumbnails, в формте:
-     *  [
-     *     "original": "/storage/images/2021/09/15/gA3bePmbSmyfmsbV9sO1IdD1TEXrMZjUyhuKldnG.png",
-     *     "200": "/storage/images/2021/09/15/gA3bePmbSmyfmsbV9sO1IdD1TEXrMZjUyhuKldnG_200.png",
-     *     "400": "/storage/images/2021/09/15/gA3bePmbSmyfmsbV9sO1IdD1TEXrMZjUyhuKldnG_400.png",
-     *     "600": "/storage/images/2021/09/15/gA3bePmbSmyfmsbV9sO1IdD1TEXrMZjUyhuKldnG_600.png"
-     *  ]
-     *
-     * @throws InvalidFilePropertiesWithSettingsPropertyConfiguration
-     */
-    public function getFileLinksBySettings($property, $customDomain = null): ?array
-    {
-        FileHelper::validateFilePropertiesWithSettingsConfig($this, 'filePropertiesWithSettings');
-
-        if ($this->$property === null) {
-            return null;
-        }
-
-        if (preg_match('/^(http|https):\/\//', $this->$property)) {
-            return [
-                'original' => $this->$property
-            ];
-        }
-
-        if (!Storage::exists("public/images/{$this->$property}")) {
-            return null;
-        }
-
-        $symbolicLink = '/storage/images/';
-
-        $uploadFileGlobalUrl = config('laravel_basic_components.upload_file_domain');
-
-        if (is_null($customDomain)) {
-            if ($uploadFileGlobalUrl) {
-                $symbolicLink = $uploadFileGlobalUrl . $symbolicLink;
-            }
-        } else {
-            $symbolicLink = $customDomain . $symbolicLink;
-        }
-
-        if (!array_key_exists($property, static::$filePropertiesWithSettings)) {
-            return null;
-        }
-
-        $fileLinks = [];
-        $fileLinks['original'] = $symbolicLink . $this->$property;
-
-        if (static::$filePropertiesWithSettings[$property] === null) {
-            return $fileLinks;
-        }
-
-        if (is_array(static::$filePropertiesWithSettings[$property])) {
-
-            foreach (static::$filePropertiesWithSettings[$property] as $filePropertiesWithSettingParamsKey => $filePropertiesWithSettingParamsItem) {
-
-                $extension = FileHelper::getExtensionFromFullPath($this->$property);
-
-                if ($filePropertiesWithSettingParamsItem[2] === FileHelper::RESIZE_TYPE_FIT_INTO_AREA_WITH_PROPORTIONS_AND_COLOR_CANVAS) {
-                    $extension = 'jpg';
-                }
-
-                $fileLinks[$filePropertiesWithSettingParamsKey] = implode('', [
-                    $symbolicLink,
-                    FileHelper::getFullPathWithFileNameWithoutExtension($this->$property),
-                    "_$filePropertiesWithSettingParamsKey.",
-                    $extension
-                ]);
-            }
-
-            return $fileLinks;
-        }
-
-        return null;
+        return $this->belongsTo(File::class);
     }
 }

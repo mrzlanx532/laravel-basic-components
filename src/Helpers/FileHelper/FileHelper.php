@@ -3,7 +3,9 @@
 namespace Mrzlanx532\LaravelBasicComponents\Helpers\FileHelper;
 
 use Mrzlanx532\LaravelBasicComponents\Helpers\FileHelper\Exceptions\ResizeTypeDoesNotExists;
-use Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\Exceptions\InvalidFilePropertiesWithSettingsPropertyConfiguration;
+use Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadImages\Exceptions\InvalidFilePropertiesWithSettingsPropertyConfiguration;
+use Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\UploadFileConfig;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
@@ -234,5 +236,32 @@ class FileHelper
         }
 
         return null;
+    }
+
+    public static function getUploadFileConfig(Model $model): UploadFileConfig
+    {
+        if (method_exists($model, 'getUploadFileConfig')) {
+            return $model->getUploadFileConfig();
+        }
+
+        return new UploadFileConfig;
+    }
+
+    public static function modelHasSoftDeletesTrait(Model $model): bool
+    {
+        return method_exists($model, 'trashed');
+    }
+
+    public static function isNeedToDeleteFileFromStorage(Model $model, string $disk): bool
+    {
+        if (!(Storage::disk($disk)->exists($model->file->filepath))) {
+            return false;
+        }
+
+        if (FileHelper::modelHasSoftDeletesTrait($model)) {
+            return $model->isForceDeleting();
+        } else {
+            return true;
+        }
     }
 }

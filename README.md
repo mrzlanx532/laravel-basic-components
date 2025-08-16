@@ -1,7 +1,8 @@
 # Оглавление
 - [Установка](#install)
 - [Компоненты и как их использовать](#componentsAndHowToUse)
-  - [Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\UploadFile)`](#uploadFile)  
+  - [Трейт `UploadImages` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadImages\UploadImages)`](#uploadImages)
+  - [Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\UploadFile)`](#uploadFile)
   - [Класс `Service` (`Mrzlanx532\LaravelBasicComponents\Service`)](#service)  
   - [Класс `Definition` (`Mrzlanx532\LaravelBasicComponents\Definition\Definition`)](#definition)  
   - [Класс `PanelForm` (`Mrzlanx532\LaravelBasicComponents\PanelForm\PanelForm`)](#panelForm)  
@@ -13,25 +14,23 @@
 ## <a name="install">Установка</a>
 
 1. Устанавливаем пакет: `composer require mrzlanx532/laravel-basic-components`
-2. Выполняем команду (копируем обязательные настройки из пакета): `php artisan vendor:publish --tag="laravel-basic-components-config"`
-
-Если в проекте не используется `browser` (компонент, который используется в админке), то пункты `4` и `5` не обязательны.
-
-4. Извлекаем миграцию для пресетов браузера: `php artisan vendor:publish --tag="laravel-basic-components-migrations"`
-5. Выполняем команду: `php artisan migrate`
+2. Публикуем настройки: `php artisan vendor:publish --tag="laravel-basic-components-config"`
+3. Публикуем миграции: `php artisan vendor:publish --tag="laravel-basic-components-migrations"`
+4. Если в проекте не используется `browser` (компонент, который используется в админке), удаляем миграцию `create_duotek_browser_filters_presets`.
+4. Выполняем команду: `php artisan migrate`
 
 ## <a name="componentsAndHowToUse">Компоненты и как их использовать</a>
-### <a name="uploadFile">Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\UploadFile`)</a>
+### <a name="uploadImages">Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadImages\UploadImages`)</a>
 #### Зачем нужен?
-1) **Сохранение\Обновление** файлов картинок из параметров `Request` с учетом конфигурации в модели   
+1) **Сохранение\Обновление** изображений из параметров `Request` с учетом конфигурации в модели   
 ( _в модели определяется нарезать ли картинки и как нарезать_ )
 2) При **обновлении** также удаляются предыдущие файлы с сервера
 #### Как использовать?
-1. Трейт вставляется в модель, которая имеет файлы в свойствах.  
+1. Трейт вставляется в модель, которая имеет изображения в свойствах.  
 Для правильной конфигурации необходимо в свойство модели `$filePropertiesWithSettings` поместить конфиг по примеру ниже:
 ```php
 ...
-use UploadFile;
+use UploadImages;
 ...
 /**
  * Если есть константа UPLOAD_FILE_TRAIT_DELETING_FILES и она true,
@@ -97,6 +96,93 @@ class UserResource extends JsonResource
     }
 }
 ```
+
+### <a name="uploadFile">Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\UploadFile`)</a>
+#### Зачем нужен?
+Трейт применяется к смежным таблицам. (например: таблица `user_files`, где есть колонка `user_id` и `file_id`)  
+Позволяет удобно сохранять, обновлять, удалять файлы взаимодействуя с таблицей `files`.   
+Также позволяет удобно настраивать конфигурацию сохранения (см. ниже)    
+
+При обновление модели удаляет предыдущий файл и заменяет новым.  
+При удаление модели удаляет файл (если нету трейта `SoftDeletes`).  
+При удалении через `forceDelete` файл тоже физически удаляется.   
+#### Как использовать?
+1. Создаем модель для промежуточной таблицы файлов (например: `user_files`)
+```php
+<?php
+
+namespace App\Models;
+
+use App\Config\UploadFileConfig;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use App\Traits\UploadFile;
+
+/**
+ * \App\Models\UserFile
+ *
+ * @property int id
+ * @property int user_id
+ * @property int file_id
+ * @property Carbon|null deleted_at
+ *
+ * @property UploadedFile|null uploadFile
+ * @property-read File $file;
+ *
+ * @method static Builder|ContactFile query()
+ * @method static ContactFile|null find($id)
+ * @method static ContactFile findOrFail($id)
+ *
+ * @mixin Model
+ */
+class UserFile extends Model
+{
+    use UploadFile; // Добавляем трейт
+    use SoftDeletes; // Добавляем SoftDeletes, если требуется
+
+    protected $table = 'user_files';
+
+    const $timestamps = false;
+    
+    /**
+     * Если настройки по-умолчанию не подходят, то создаем метод getUploadFileConfig 
+     */
+    public function getUploadFileConfig(): UploadFileConfig
+    {
+        return UploadFileConfig::create()
+            ->setAsPublic()
+            ->setForeignKey('file_id');
+    }
+}
+```
+2. Применяем в сервисе.
+```php
+...
+$user = new User;
+$user->save();
+
+if (isset($this->params['files'])) {
+    foreach ($this->params['files'] as $passedFile) {
+        $file = new UserFile;
+        
+        // Свойство `uploadFile` является зарезервированным.
+        // $passedFile является \Illuminate\Http\UploadedFile
+        $file->uploadFile = $passedFile;
+
+        $files[] = $file;
+    };
+
+    $user->files()->saveMany($files);
+}
+...
+```
+
+3. Итог
+У нас сохранились файлы в `storage/app/private/files/<год>/<месяц>/<день>/<хэш_от_файла>.<расширение_файла>`.  
+Добавились в таблицу `files` и создалась связь в таблице `user_files`
 
 ### <a name="service">Класс `Service` (`Mrzlanx532\LaravelBasicComponents\Service`)</a>
 #### Зачем нужен?

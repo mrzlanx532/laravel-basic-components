@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  *
  * @property-read string $extension
  * @property-read string $filename_without_extension
+ * @property-read string $original_filename_without_extension
  *
  * @method static Builder|File query()
  * @method static File|null find($id)
@@ -31,17 +32,18 @@ class File extends Model
 
     const UPDATED_AT = null;
 
-    protected function extension(): Attribute
+    public function getExtensionAttribute(): array|string
     {
-        return Attribute::make(
-            get: fn ($value) => pathinfo($value, PATHINFO_EXTENSION)
-        );
+        return pathinfo($this->filename, PATHINFO_EXTENSION);
     }
 
-    protected function filenameWithoutExtension(): Attribute
+    public function getFilenameWithoutExtensionAttribute(): array|string
     {
-        return Attribute::make(
-            get: fn ($value) => pathinfo($value, PATHINFO_FILENAME)
-        );
+        return pathinfo($this->filename, PATHINFO_FILENAME);
+    }
+
+    public function getOriginalFilenameWithoutExtensionAttribute(): array|string
+    {
+        return pathinfo($this->original_filename, PATHINFO_FILENAME);
     }
 }

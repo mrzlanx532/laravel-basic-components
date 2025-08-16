@@ -19,7 +19,7 @@ use Illuminate\Database\Query\Builder;
  */
 class BrowserFilterPreset extends Model
 {
-    protected $table = 'mrzlanx532_browser_filters_presets';
+    protected $table = 'browser_filters_presets';
 
     public $timestamps = false;
 }

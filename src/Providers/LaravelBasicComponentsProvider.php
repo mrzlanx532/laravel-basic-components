@@ -15,7 +15,7 @@ class LaravelBasicComponentsProvider extends ServiceProvider
         ], 'laravel-basic-components-config');
 
         $this->publishes([
-            "$currentDirectory/../../database/migrations/create_Mrzlanx532_browser_filters_presets.php" => database_path('migrations/' . date('Y_m_d_His') . '_create_Mrzlanx532_browser_filters_presets.php'),
+            "$currentDirectory/../../database/migrations/create_browser_filters_presets.php" => database_path('migrations/' . date('Y_m_d_His') . '_create_browser_filters_presets.php'),
             "$currentDirectory/../../database/migrations/create_files.php" => database_path('migrations/' . date('Y_m_d_His') . '_create_files.php')
         ], 'laravel-basic-components-migrations');
     }

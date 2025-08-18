@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @property string filepath
  * @property int id
  * @property string original_filename
+ * @property boolean is_public
  *
  * @property-read string $extension
  * @property-read string $filename_without_extension

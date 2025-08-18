@@ -33,6 +33,7 @@ trait UploadFile
             $file->filename = $model->uploadFile->hashName();
             $file->filepath = "$filepath/$file->filename";
             $file->original_filename = preg_replace('/[^\p{L}0-9_\-\. ]/u', '', $model->uploadFile->getClientOriginalName());
+            $file->is_public = $config->isPublic();
             $file->save();
 
             $model->{$config->getForeignKey()} = $file->id;

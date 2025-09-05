@@ -18,7 +18,7 @@ trait UploadImages
      * @throws InvalidFilePropertiesWithSettingsPropertyConfiguration
      * @uses \Illuminate\Database\Eloquent\Model
      */
-    public static function bootUploadFile()
+    protected static function booted()
     {
         static::saving(function ($model) {
             FileHelper::validateFilePropertiesWithSettingsConfig($model, 'filePropertiesWithSettings');

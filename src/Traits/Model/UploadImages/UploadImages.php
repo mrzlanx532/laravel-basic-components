@@ -64,7 +64,7 @@ trait UploadImages
      */
     protected function removePreviousFilesIfExists(Model $model, $filePropertyName, $filePropertySettings)
     {
-        $fullPathOfPreviousFile = "public/images/{$model->getOriginal($filePropertyName)}";
+        $fullPathOfPreviousFile = "images/{$model->getOriginal($filePropertyName)}";
 
         if ($fullPathOfPreviousFile === null) {
             return;
@@ -74,8 +74,8 @@ trait UploadImages
             return;
         }
 
-        if (Storage::exists($fullPathOfPreviousFile)) {
-            Storage::delete($fullPathOfPreviousFile);
+        if (Storage::disk('public')->exists($fullPathOfPreviousFile)) {
+            Storage::disk('public')->delete($fullPathOfPreviousFile);
         }
 
         if (is_array($filePropertySettings)) {
@@ -94,8 +94,8 @@ trait UploadImages
                     $thumbnailExtension
                 ]);
 
-                if (Storage::exists($fullPathOfThumbnailForPreviousFile)) {
-                    Storage::delete($fullPathOfThumbnailForPreviousFile);
+                if (Storage::disk('public')->exists($fullPathOfThumbnailForPreviousFile)) {
+                    Storage::disk('public')->delete($fullPathOfThumbnailForPreviousFile);
                 }
             }
         }
@@ -119,7 +119,7 @@ trait UploadImages
 
         $folderPathByCurrentDate = FileHelper::generateFolderPathByCurrentDate();
 
-        $file->storeAs("public/images/$folderPathByCurrentDate", $file->hashName());
+        $file->storeAs("images/$folderPathByCurrentDate", $file->hashName(), 'public');
         $model->$filePropertyName = $folderPathByCurrentDate . '/' . $file->hashName();
 
         if (is_array($filePropertySettings)) {
@@ -134,13 +134,13 @@ trait UploadImages
                 }
 
                 $fileNameWithPathForThumbnail = implode('', [
-                    "public/images/$folderPathByCurrentDate/",
+                    "images/$folderPathByCurrentDate/",
                     FileHelper::getFullPathWithFileNameWithoutExtension($file->hashName()),
                     "_$filePropertySettingsKey.",
                     $extension
                 ]);
 
-                Storage::put($fileNameWithPathForThumbnail, $fileStreamAfterResize);
+                Storage::disk('public')->put($fileNameWithPathForThumbnail, $fileStreamAfterResize);
             }
         }
     }
@@ -190,7 +190,7 @@ trait UploadImages
             ];
         }
 
-        if (!Storage::exists("public/images/{$this->$property}")) {
+        if (!Storage::disk('public')->exists("images/{$this->$property}")) {
             return null;
         }
 

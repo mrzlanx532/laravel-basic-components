@@ -12,13 +12,20 @@ class ReplaceNullValuesInFormData
 {
     public function handle(Request $request, Closure $next)
     {
-        $request->merge(
-            $this->replaceNullStrings(
-                $request->all()
-            )
-        );
+        if ($this->isFormData($request)) {
+            $request->merge(
+                $this->replaceNullStrings(
+                    $request->all()
+                )
+            );
+        }
 
         return $next($request);
+    }
+
+    private function isFormData(Request $request)
+    {
+        return str_contains($request->header('Content-Type'), 'multipart/form-data');
     }
 
     private function replaceNullStrings($data)

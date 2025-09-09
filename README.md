@@ -1,5 +1,6 @@
 # Оглавление
 - [Установка](#install)
+- [Важно](#attention)
 - [Компоненты и как их использовать](#componentsAndHowToUse)
   - [Трейт `UploadImages` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadImages\UploadImages)`](#uploadImages)
   - [Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadFile\UploadFile)`](#uploadFile)
@@ -9,7 +10,7 @@
   - [Класс `QueryBuilder` (`Mrzlanx532\LaravelBasicComponents\QueryBuilder`)](#queryBuilder)  
   - [Класс `PanelSet` (`Mrzlanx532\LaravelBasicComponents\PanelSet\PanelSet`)](#panelSet)  
   - [Класс `PanelSetSortable` (`Mrzlanx532\LaravelBasicComponents\PanelSetSortable\PanelSetSortable`)](#panelSetSortable)  
-  - [Класс `BrowserFilterPresetController` (`Mrzlanx532\LaravelBasicComponents\Controllers\BrowserFilterPresetController`)](#browserFilterPresetController)  
+  - [Класс `BrowserFilterPresetController` (`Mrzlanx532\LaravelBasicComponents\Controllers\BrowserFilterPresetController`)](#browserFilterPresetController)
 
 ## <a name="install">Установка</a>
 
@@ -18,6 +19,9 @@
 3. Публикуем миграции: `php artisan vendor:publish --tag="laravel-basic-components-migrations"`
 4. Если в проекте не используется `browser` (компонент, который используется в админке), удаляем миграцию `create_duotek_browser_filters_presets`.
 4. Выполняем команду: `php artisan migrate`
+
+## <a name="attention">Важно</a>
+При установке пакета устанавливается `middleware` для группы `api` `Mrzlanx532\LaravelBasicComponents\Middleware\ReplaceNullValuesInFormData`
 
 ## <a name="componentsAndHowToUse">Компоненты и как их использовать</a>
 ### <a name="uploadImages">Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadImages\UploadImages`)</a>

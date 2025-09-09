@@ -3,6 +3,7 @@
 namespace Mrzlanx532\LaravelBasicComponents\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Mrzlanx532\LaravelBasicComponents\Middleware\ReplaceNullValuesInFormData;
 
 class LaravelBasicComponentsProvider extends ServiceProvider
 {
@@ -18,5 +19,11 @@ class LaravelBasicComponentsProvider extends ServiceProvider
             "$currentDirectory/../../database/migrations/create_browser_filters_presets.php" => database_path('migrations/' . date('Y_m_d_His') . '_create_browser_filters_presets.php'),
             "$currentDirectory/../../database/migrations/create_files.php" => database_path('migrations/' . date('Y_m_d_His') . '_create_files.php')
         ], 'laravel-basic-components-migrations');
+
+        $this->app->booted(function () {
+            /** @var \Illuminate\Routing\Router $router */
+            $router = $this->app['router'];
+            $router->pushMiddlewareToGroup('api', ReplaceNullValuesInFormData::class);
+        });
     }
 }

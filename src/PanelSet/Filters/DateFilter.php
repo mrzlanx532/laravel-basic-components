@@ -73,7 +73,7 @@ class DateFilter extends BaseFilter
 
     private function createCarbon($value): Carbon
     {
-        return $this->getIsTimestamp() ? Carbon::parse($value) : Carbon::createFromFormat('d.m.Y', $value);
+        return $this->getIsTimestamp() ? Carbon::createFromTimestamp($value) : Carbon::createFromFormat('d.m.Y', $value);
     }
 
     public function notTimestamp(): static

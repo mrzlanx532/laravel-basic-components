@@ -21,7 +21,10 @@
 4. Выполняем команду: `php artisan migrate`
 
 ## <a name="attention">Важно</a>
-При установке пакета устанавливается `middleware` для группы `api` `Mrzlanx532\LaravelBasicComponents\Middleware\ReplaceNullValuesInFormData`
+1. При установке пакета устанавливается `middleware` для группы `api` `Mrzlanx532\LaravelBasicComponents\Middleware\ReplaceNullValuesInFormData`
+2. Приложение должно работать в `UTC (00:00)`, соответственно, в конфиге `config.app` должно быть:  
+`timezone => 'UTC'`
+3. Все даты для `datetime` и `timestamp` при сохранении должны приводится к `UTC (00:00)`
 
 ## <a name="componentsAndHowToUse">Компоненты и как их использовать</a>
 ### <a name="uploadImages">Трейт `UploadFile` (`Mrzlanx532\LaravelBasicComponents\Traits\Model\UploadImages\UploadImages`)</a>

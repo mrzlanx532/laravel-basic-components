@@ -46,23 +46,6 @@ class DatetimeFilter extends BaseFilter
             return;
         }
 
-        if ($this->getIsTimestamp()) {
-            $this->panelSet->queryBuilder->whereBetween(
-                $this->columnName,
-                [
-                    $this->createCarbon($filterValueOrValues[0])
-                        ->toDateTimeString(),
-                    $this->createCarbon($filterValueOrValues[0])
-                        ->add(23, 'hours')
-                        ->add(59, 'minutes')
-                        ->add(59, 'seconds')
-                        ->toDateTimeString(),
-                ],
-            );
-
-            return;
-        }
-
         $this->panelSet->queryBuilder->where(
             $this->columnName,
             $this->createCarbon($filterValueOrValues[0])->toDateTimeString(),
@@ -71,7 +54,7 @@ class DatetimeFilter extends BaseFilter
 
     private function createCarbon($value): Carbon
     {
-        return $this->getIsTimestamp() ? Carbon::createFromTimestamp($value) : Carbon::createFromFormat('d.m.Y H:i:s', $value);
+        return $this->getIsTimestamp() ? Carbon::createFromTimestamp($value) : (Carbon::createFromFormat('d.m.Y H:i:sP', $value)->utc());
     }
 
     public function notTimestamp(): static

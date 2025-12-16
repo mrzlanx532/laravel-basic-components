@@ -90,12 +90,16 @@ class PanelSetFrontendAdapter
                 'url' =>  method_exists($filter, 'getUrl') ? $filter->getUrl() : "",
                 'filter' => $filter->getIsFiltering(),
                 'mask' => method_exists($filter, 'getMask') ? $filter->getMask() : null,
-                'nullable' => $filter->getIsNullable()
+                'nullable' => $filter->getIsNullable(),
             ];
 
-            if (in_array($filter->getType(), ['DATE', 'DATETIME'])) {
+            if ($filter->getType() === 'DATETIME') {
                 /* @var $filter DateFilter */
                 $config['is_timestamp'] = $filter->getIsTimestamp();
+            }
+
+            if ($filter->getType() == 'DATE') {
+                $config['strategy'] = $filter->getStrategy();
             }
 
             $preparedFilters[$index]['id'] = $filter->getFilterParamName();

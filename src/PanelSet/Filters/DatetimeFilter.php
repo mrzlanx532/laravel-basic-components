@@ -7,8 +7,14 @@ use Illuminate\Support\Carbon;
 
 class DatetimeFilter extends BaseFilter
 {
-    private bool $isTimestamp = true;
-    private bool $isConvertToUTCZero = true;
+    const STRATEGY_TIMESTAMP = 'timestamp';
+    const STRATEGY_DATETIME_WITH_TZ = 'datetime_with_tz';
+    const STRATEGY_DATETIME_WITH_TZ_CONVERTLESS = 'datetime_with_tz_convertless';
+
+    /**
+     * @var 'timestamp' | 'datetime_with_tz' | 'datetime_with_tz_convertless'
+     */
+    private string $strategy = self::STRATEGY_TIMESTAMP;
 
     public function __construct(PanelSet $panelSet, string $columnName, string $title = null)
     {
@@ -20,7 +26,7 @@ class DatetimeFilter extends BaseFilter
         return 'DATETIME';
     }
 
-    public function setQuery($filterValueOrValues)
+    public function setQuery($filterValueOrValues): void
     {
         if ($this->getIsRange()) {
             if ($filterValueOrValues[0] && $filterValueOrValues[1]) {
@@ -38,6 +44,7 @@ class DatetimeFilter extends BaseFilter
 
             if ($filterValueOrValues[0]) {
                 $this->panelSet->queryBuilder->where($this->columnName, '>=', $this->createCarbon($filterValueOrValues[0])->toDateTimeString());
+                return;
             }
 
             if ($filterValueOrValues[1]) {
@@ -55,40 +62,26 @@ class DatetimeFilter extends BaseFilter
 
     private function createCarbon($value): Carbon
     {
-        if ($this->getIsTimestamp()) {
-            return Carbon::createFromTimestamp($value);
-        }
-
-        if ($this->isConvertToUTCZero) {
-            return (Carbon::createFromFormat('d.m.Y H:i:sP', $value)->utc());
-        }
-
-        return Carbon::createFromFormat('d.m.Y H:i:sP', $value);
+        return match ($this->strategy) {
+            /** Для timestamp переданного в UTC+00:00. */
+            self::STRATEGY_TIMESTAMP => Carbon::createFromTimestamp($value),
+            /** Для типа колонки datetime (mysql, postgresql), приводим переданный datetime к UTC+00:00. */
+            self::STRATEGY_DATETIME_WITH_TZ => Carbon::createFromFormat('d.m.Y H:i:sP', $value)->utc(),
+            /** Для типа колонки datetime (mysql, postgresql), не приводим переданный datetime к UTC+00:00. */
+            self::STRATEGY_DATETIME_WITH_TZ_CONVERTLESS => Carbon::createFromFormat('d.m.Y H:i:sP', $value),
+        };
     }
 
-    /**
-     * (!) Условие работает только при `notTimestamp()`
-     *
-     * При передаче даты в формате: 01.12.2025 00:00:00+03:00,
-     * в условие попадает дата 01.12.2025 00:00:00 без конвертации в UTC+0:00
-     */
-    public function notConvertToUTCZero(): static
+    public function setStrategy($strategy): static
     {
-        $this->isConvertToUTCZero = false;
+        $this->strategy = $strategy;
 
         return $this;
     }
 
-    public function notTimestamp(): static
+    public function getStrategy(): string
     {
-        $this->isTimestamp = false;
-
-        return $this;
-    }
-
-    public function getIsTimestamp(): bool
-    {
-        return $this->isTimestamp;
+        return $this->strategy;
     }
 
     public function getOptions(): array|null

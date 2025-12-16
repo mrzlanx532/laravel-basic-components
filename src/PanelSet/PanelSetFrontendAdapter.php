@@ -93,12 +93,7 @@ class PanelSetFrontendAdapter
                 'nullable' => $filter->getIsNullable(),
             ];
 
-            if ($filter->getType() === 'DATETIME') {
-                /* @var $filter DateFilter */
-                $config['is_timestamp'] = $filter->getIsTimestamp();
-            }
-
-            if ($filter->getType() == 'DATE') {
+            if (in_array($filter->getType(), ['DATETIME', 'DATE'])) {
                 $config['strategy'] = $filter->getStrategy();
             }
 

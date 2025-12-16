@@ -27,7 +27,7 @@ class DateFilter extends BaseFilter
         return 'DATE';
     }
 
-    public function setQuery($filterValueOrValues)
+    public function setQuery($filterValueOrValues): void
     {
         match ($this->getStrategy()) {
             /** Для timestamp переданного в UTC+00:00. */
@@ -54,7 +54,7 @@ class DateFilter extends BaseFilter
     /**
      * Пример входящего значения: 1764536400 (начало дня по UTC+0)
      */
-    public function setQueryByTimestampStrategy($filterValueOrValues)
+    public function setQueryByTimestampStrategy($filterValueOrValues): void
     {
         if ($this->getIsRange()) {
             if ($filterValueOrValues[0] && $filterValueOrValues[1]) {
@@ -99,7 +99,7 @@ class DateFilter extends BaseFilter
     /**
      * Пример входящего значение: 30.11.2025
      */
-    public function setQueryByDateStrategy($filterValueOrValues)
+    public function setQueryByDateStrategy($filterValueOrValues): void
     {
         if ($this->getIsRange()) {
             if ($filterValueOrValues[0] && $filterValueOrValues[1]) {
@@ -129,7 +129,7 @@ class DateFilter extends BaseFilter
     /**
      * Пример входящего значение: 01.12.2025 00:00:00+03:00
      */
-    public function setQueryByDatetimeWithTZStrategy($filterValueOrValues)
+    public function setQueryByDatetimeWithTZStrategy($filterValueOrValues): void
     {
         if ($this->getIsRange()) {
 
@@ -175,15 +175,14 @@ class DateFilter extends BaseFilter
         ]);
     }
 
-    /**
-     * @param 'STRATEGY_TIMESTAMP'|'STRATEGY_DATETIME'|'STRATEGY_DATE' $strategy
-     */
-    public function setStrategy($strategy)
+    public function setStrategy(string $strategy): static
     {
         $this->strategy = $strategy;
+
+        return $this;
     }
 
-    public function getStrategy()
+    public function getStrategy(): string
     {
         return $this->strategy;
     }

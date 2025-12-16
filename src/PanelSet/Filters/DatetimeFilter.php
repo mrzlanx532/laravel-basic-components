@@ -8,6 +8,7 @@ use Illuminate\Support\Carbon;
 class DatetimeFilter extends BaseFilter
 {
     private bool $isTimestamp = true;
+    private bool $isConvertToUTCZero = true;
 
     public function __construct(PanelSet $panelSet, string $columnName, string $title = null)
     {
@@ -54,7 +55,28 @@ class DatetimeFilter extends BaseFilter
 
     private function createCarbon($value): Carbon
     {
-        return $this->getIsTimestamp() ? Carbon::createFromTimestamp($value) : (Carbon::createFromFormat('d.m.Y H:i:sP', $value)->utc());
+        if ($this->getIsTimestamp()) {
+            return Carbon::createFromTimestamp($value);
+        }
+
+        if ($this->isConvertToUTCZero) {
+            return (Carbon::createFromFormat('d.m.Y H:i:sP', $value)->utc());
+        }
+
+        return Carbon::createFromFormat('d.m.Y H:i:sP', $value);
+    }
+
+    /**
+     * (!) Условие работает только при `notTimestamp()`
+     *
+     * При передаче даты в формате: 01.12.2025 00:00:00+03:00,
+     * в условие попадает дата 01.12.2025 00:00:00 без конвертации в UTC+0:00
+     */
+    public function notConvertToUTCZero(): static
+    {
+        $this->isConvertToUTCZero = false;
+
+        return $this;
     }
 
     public function notTimestamp(): static
